@@ -343,27 +343,42 @@
    */
   async function handleDelete(option: CrmTreeNodeData) {
     const offspringIds = [option.id, ...getSpringIds((option as CrmTreeNodeData).children)];
-    const isNotAllow = await checkDeleteDepartment(offspringIds);
+    const canDelete = await checkDeleteDepartment(offspringIds);
+    
+    if (!canDelete) {
+      // 部门下有员工，不允许删除，直接提示
+      openModal({
+        type: 'warning',
+        title: t('common.tip'),
+        content: t('org.deleteExistUserDepartment'),
+        positiveText: t('org.ok'),
+      });
+      return;
+    }
+    
+    // 可以删除，显示确认对话框
     openModal({
       type: 'error',
       title: t('common.deleteConfirmTitle', { name: characterLimit(option.name) }),
-      content: !isNotAllow ? t('org.deleteExistUserDepartment') : t('org.deleteDepartmentContent'),
-      positiveText: !isNotAllow ? t('org.ok') : t('common.confirm'),
-      negativeText: !isNotAllow ? '' : t('common.cancel'),
+      content: t('org.deleteDepartmentContent'),
+      positiveText: t('common.confirm'),
+      negativeText: t('common.cancel'),
       positiveButtonProps: {
-        type: !isNotAllow ? 'primary' : 'error',
+        type: 'error',
         size: 'medium',
       },
       onPositiveClick: async () => {
         try {
-          if (isNotAllow) {
-            await deleteDepartment(offspringIds);
-            Message.success(t('common.deleteSuccess'));
-            initTree(true);
-          }
-        } catch (error) {
+          await deleteDepartment(offspringIds);
+          Message.success(t('common.deleteSuccess'));
+          initTree(true);
+        } catch (error: any) {
           // eslint-disable-next-line no-console
           console.log(error);
+          // 如果后端返回错误信息（如部门下有员工），显示给用户
+          if (error?.message) {
+            Message.error(error.message);
+          }
         }
       },
     });

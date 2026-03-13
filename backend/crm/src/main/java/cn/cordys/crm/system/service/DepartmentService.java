@@ -230,7 +230,7 @@ public class DepartmentService extends MoveNodeService {
     public void delete(List<String> ids, String operator, String orgId) {
         if (deleteCheck(ids, orgId)) {
             List<Department> departmentList = departmentMapper.selectByIds(ids);
-            //刪除部門
+            //刪除部门
             departmentMapper.deleteByIds(ids);
             List<LogDTO> logs = new ArrayList<>();
             // 添加日志上下文
@@ -240,6 +240,8 @@ public class DepartmentService extends MoveNodeService {
                 logs.add(logDTO);
             });
             logService.batchAdd(logs);
+        } else {
+            throw new GenericException(Translator.get("department.has.employee"));
         }
     }
 
